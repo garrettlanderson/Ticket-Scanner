@@ -479,6 +479,8 @@ impl eframe::App for TicketScannerApp {
                         "last 10 min",
                         SUCCESS,
                     );
+                    ui.add_space(10.0);
+                    recent_tile(ui, &self.recent);
                 });
             });
 
@@ -625,84 +627,12 @@ impl eframe::App for TicketScannerApp {
             });
 
         // ═══════════════════════════════════════════════════════════════════════
-        // Central panel — recent scans (fills the strip between status and numpad)
+        // Central panel — empty filler between status banner and numpad.
+        // (Recent scans now live in the right-side panel under PLATES / HR.)
         // ═══════════════════════════════════════════════════════════════════════
         egui::CentralPanel::default()
-            .frame(Frame::default().fill(BG).inner_margin(Margin::same(10.0)))
-            .show(ctx, |ui| {
-                Frame::default()
-                    .fill(PANEL)
-                    .rounding(Rounding::same(12.0))
-                    .inner_margin(Margin::same(10.0))
-                    .show(ui, |ui| {
-                        ui.set_min_width(ui.available_width() - 4.0);
-                        ui.set_min_height(ui.available_height() - 4.0);
-
-                        // Header row
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                RichText::new("RECENT SCANS").size(13.0).color(MUTED),
-                            );
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                ui.label(
-                                    RichText::new("TIME SCANNED")
-                                        .size(12.0)
-                                        .strong()
-                                        .color(MUTED),
-                                );
-                                ui.add_space(40.0);
-                                ui.label(
-                                    RichText::new("TICKET #").size(12.0).strong().color(MUTED),
-                                );
-                            });
-                        });
-                        ui.add_space(2.0);
-                        ui.separator();
-
-                        if self.recent.is_empty() {
-                            ui.centered_and_justified(|ui| {
-                                ui.label(
-                                    RichText::new("No tickets scanned yet")
-                                        .size(14.0)
-                                        .color(MUTED),
-                                );
-                            });
-                        } else {
-                            egui::ScrollArea::vertical()
-                                .auto_shrink([false; 2])
-                                .show(ui, |ui| {
-                                    for (i, scan) in self.recent.iter().enumerate() {
-                                        let (color, prefix) = if i == 0 {
-                                            (WHITE, "▶ ")
-                                        } else {
-                                            (MUTED, "   ")
-                                        };
-                                        ui.horizontal(|ui| {
-                                            ui.label(
-                                                RichText::new(format!(
-                                                    "{prefix}#{:>6}",
-                                                    scan.ticket_number
-                                                ))
-                                                .size(16.0)
-                                                .strong()
-                                                .color(color),
-                                            );
-                                            ui.with_layout(
-                                                Layout::right_to_left(Align::Center),
-                                                |ui| {
-                                                    ui.label(
-                                                        RichText::new(time_of(&scan.scanned_at))
-                                                            .size(14.0)
-                                                            .color(MUTED),
-                                                    );
-                                                },
-                                            );
-                                        });
-                                    }
-                                });
-                        }
-                    });
-            });
+            .frame(Frame::default().fill(BG))
+            .show(ctx, |_ui| {});
     }
 }
 
@@ -723,5 +653,51 @@ fn stat_card_compact(ui: &mut egui::Ui, label: &str, value: &str, sub: &str, col
                 ui.label(RichText::new(sub).size(12.0).color(MUTED));
                 ui.add_space(2.0);
             });
+        });
+}
+
+// ── Shared widget: small "last 4 scans" tile (right-side panel) ──────────────
+fn recent_tile(ui: &mut egui::Ui, recent: &[ScanRecord]) {
+    Frame::default()
+        .fill(PANEL)
+        .rounding(Rounding::same(12.0))
+        .inner_margin(Margin::same(10.0))
+        .show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.label(RichText::new("LAST SCANS").size(12.0).color(MUTED));
+            ui.add_space(4.0);
+            ui.separator();
+            ui.add_space(2.0);
+
+            if recent.is_empty() {
+                ui.add_space(6.0);
+                ui.vertical_centered(|ui| {
+                    ui.label(RichText::new("—").size(14.0).color(MUTED));
+                });
+                ui.add_space(6.0);
+                return;
+            }
+
+            for (i, scan) in recent.iter().take(4).enumerate() {
+                let color = if i == 0 { WHITE } else { MUTED };
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(format!("#{}", scan.ticket_number))
+                            .size(16.0)
+                            .strong()
+                            .color(color),
+                    );
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        ui.label(
+                            RichText::new(time_of(&scan.scanned_at))
+                                .size(12.0)
+                                .color(MUTED),
+                        );
+                    });
+                });
+                if i < recent.len().min(4) - 1 {
+                    ui.add_space(2.0);
+                }
+            }
         });
 }

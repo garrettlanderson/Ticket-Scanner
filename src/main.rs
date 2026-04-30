@@ -20,14 +20,37 @@ fn main() -> eframe::Result<()> {
         }
     }
 
-    // Allow overriding paths via environment variables
-    let db_path = std::env::var("SCANNER_DB_PATH").unwrap_or_else(|_| "tickets.db".to_string());
-    let log_path = std::env::var("SCANNER_LOG_PATH").unwrap_or_else(|_| "tickets.log".to_string());
+    // Resolve the directory where data files live.  Order of precedence:
+    //   1. SCANNER_DATA_DIR  (explicit override)
+    //   2. $HOME/.ticket-scanner
+    //   3. current working directory
+    let data_dir: std::path::PathBuf = if let Ok(d) = std::env::var("SCANNER_DATA_DIR") {
+        std::path::PathBuf::from(d)
+    } else if let Some(home) = std::env::var_os("HOME") {
+        std::path::PathBuf::from(home).join(".ticket-scanner")
+    } else {
+        std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."))
+    };
+    std::fs::create_dir_all(&data_dir).ok();
+
+    // Database path stays stable across runs; SCANNER_DB_PATH still wins.
+    let db_path = std::env::var("SCANNER_DB_PATH")
+        .unwrap_or_else(|_| data_dir.join("tickets.db").to_string_lossy().into_owned());
+
+    // Log path: a fresh timestamped file per run, unless overridden.
+    let log_path = std::env::var("SCANNER_LOG_PATH").unwrap_or_else(|_| {
+        let stamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        data_dir
+            .join(format!("tickets_{stamp}.log"))
+            .to_string_lossy()
+            .into_owned()
+    });
 
     let db = db::Database::new(&db_path).expect("Failed to open/create the ticket database");
     let logger =
         Arc::new(logger::Logger::new(&log_path).expect("Failed to open/create the log file"));
     logger.log("INFO", &format!("database: {db_path}"));
+    logger.log("INFO", &format!("log file: {log_path}"));
 
     // Window-mode selection.  Wayland compositors (labwc/wayfire on Pi OS) often
     // ignore `with_maximized`, so we offer a real fullscreen fallback.
