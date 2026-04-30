@@ -37,6 +37,8 @@ pub struct TicketScannerApp {
     last_stats_refresh: Instant,
     /// While `Some` and not yet expired, duplicate scans are accepted.
     allow_dup_until: Option<Instant>,
+    /// Tracked locally so F11 can toggle and Esc can leave fullscreen.
+    fullscreen: bool,
 }
 
 impl TicketScannerApp {
@@ -63,6 +65,9 @@ impl TicketScannerApp {
             status_at: None,
             last_stats_refresh: Instant::now(),
             allow_dup_until: None,
+            fullscreen: std::env::var("SCANNER_WINDOW_MODE")
+                .map(|m| m.to_lowercase() != "windowed" && m.to_lowercase() != "maximized")
+                .unwrap_or(true),
         }
     }
 
@@ -321,6 +326,8 @@ impl eframe::App for TicketScannerApp {
         let mut appended = String::new();
         let mut enter = false;
         let mut back = false;
+        let mut toggle_fullscreen = false;
+        let mut exit_fullscreen = false;
 
         ctx.input(|i| {
             for ev in &i.events {
@@ -336,6 +343,16 @@ impl eframe::App for TicketScannerApp {
                         pressed: true,
                         ..
                     } => back = true,
+                    egui::Event::Key {
+                        key: egui::Key::F11,
+                        pressed: true,
+                        ..
+                    } => toggle_fullscreen = true,
+                    egui::Event::Key {
+                        key: egui::Key::Escape,
+                        pressed: true,
+                        ..
+                    } => exit_fullscreen = true,
                     _ => {}
                 }
             }
@@ -347,6 +364,14 @@ impl eframe::App for TicketScannerApp {
         }
         if enter {
             self.submit();
+        }
+        if toggle_fullscreen {
+            self.fullscreen = !self.fullscreen;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(self.fullscreen));
+        }
+        if exit_fullscreen && self.fullscreen {
+            self.fullscreen = false;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
         }
 
         // ═══════════════════════════════════════════════════════════════════════
@@ -450,10 +475,7 @@ impl eframe::App for TicketScannerApp {
                                                 (self.input.clone(), WHITE)
                                             };
                                             ui.label(
-                                                RichText::new(disp)
-                                                    .size(42.0)
-                                                    .strong()
-                                                    .color(col),
+                                                RichText::new(disp).size(42.0).strong().color(col),
                                             );
                                         });
                                     });
