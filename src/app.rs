@@ -457,11 +457,7 @@ impl eframe::App for TicketScannerApp {
         egui::SidePanel::right("stats_panel")
             .resizable(false)
             .exact_width(248.0)
-            .frame(
-                Frame::default()
-                    .fill(BG)
-                    .inner_margin(Margin::same(10.0)),
-            )
+            .frame(Frame::default().fill(BG).inner_margin(Margin::same(10.0)))
             .show(ctx, |ui| {
                 ui.vertical(|ui| {
                     stat_card_compact(
@@ -489,8 +485,13 @@ impl eframe::App for TicketScannerApp {
         // (Defined AFTER the right-side stats panel, so the side panel claims
         // the full height of the right edge and the numpad fills the rest.)
         // ═══════════════════════════════════════════════════════════════════════
-        egui::TopBottomPanel::bottom("numpad")
-            .exact_height(390.0)
+        // ═══════════════════════════════════════════════════════════════════════
+        // Central panel — input display + number pad.
+        // Fills everything between the status banner and the bottom of the
+        // window so the controls sit right under the status line on the
+        // small (1024×600) display.
+        // ═══════════════════════════════════════════════════════════════════════
+        egui::CentralPanel::default()
             .frame(
                 Frame::default()
                     .fill(PANEL)
@@ -625,14 +626,6 @@ impl eframe::App for TicketScannerApp {
                     });
                 });
             });
-
-        // ═══════════════════════════════════════════════════════════════════════
-        // Central panel — empty filler between status banner and numpad.
-        // (Recent scans now live in the right-side panel under PLATES / HR.)
-        // ═══════════════════════════════════════════════════════════════════════
-        egui::CentralPanel::default()
-            .frame(Frame::default().fill(BG))
-            .show(ctx, |_ui| {});
     }
 }
 
