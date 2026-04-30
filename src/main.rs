@@ -6,6 +6,18 @@ use eframe::egui;
 use std::sync::Arc;
 
 fn main() -> eframe::Result<()> {
+    // Force a 1:1 scale factor on X11 *before* winit reads the environment.
+    // The Elecrow / LCD-Show drivers report the panel's true physical size
+    // (~153×86 mm at 1024×600), which causes winit to compute a HiDPI scale
+    // factor (~1.77×) and inflate the window past the screen.  We want pixel
+    // accurate rendering, then control UI size with our own pixels_per_point.
+    // Override at launch with `WINIT_X11_SCALE_FACTOR=...` if you really
+    // want winit's auto-detected value.
+    if std::env::var_os("WINIT_X11_SCALE_FACTOR").is_none() {
+        // SAFETY: single-threaded at this point, before any other code runs.
+        unsafe { std::env::set_var("WINIT_X11_SCALE_FACTOR", "1.0"); }
+    }
+
     // Allow overriding paths via environment variables
     let db_path = std::env::var("SCANNER_DB_PATH").unwrap_or_else(|_| "tickets.db".to_string());
     let log_path = std::env::var("SCANNER_LOG_PATH").unwrap_or_else(|_| "tickets.log".to_string());
@@ -24,8 +36,8 @@ fn main() -> eframe::Result<()> {
 
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("Ticket Scanner")
-        .with_inner_size([1024.0, 600.0])
-        .with_min_inner_size([640.0, 400.0]);
+        .with_inner_size([800.0, 480.0])
+        .with_min_inner_size([480.0, 320.0]);
 
     match mode.as_str() {
         "windowed" => {}
@@ -42,6 +54,9 @@ fn main() -> eframe::Result<()> {
 
     let native_options = eframe::NativeOptions {
         viewport,
+        // Don't restore previous window geometry — it can pin the window to
+        // a stale size that's larger than the current display.
+        persist_window: false,
         ..Default::default()
     };
 

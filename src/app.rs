@@ -45,6 +45,20 @@ impl TicketScannerApp {
     pub fn new(cc: &eframe::CreationContext<'_>, db: Database, logger: Arc<Logger>) -> Self {
         configure_visuals(&cc.egui_ctx);
 
+        // Pin the egui scale factor.  egui auto-detects from the OS, but on
+        // small high-DPI panels (e.g. the Elecrow 7") this inflates the
+        // window beyond the physical screen, breaking fullscreen.
+        // Override with `SCANNER_SCALE=1.25` etc. if you want larger UI.
+        if let Ok(s) = std::env::var("SCANNER_SCALE") {
+            if let Ok(v) = s.parse::<f32>() {
+                if v > 0.1 && v < 5.0 {
+                    cc.egui_ctx.set_pixels_per_point(v);
+                }
+            }
+        } else {
+            cc.egui_ctx.set_pixels_per_point(1.0);
+        }
+
         let total = db.get_total_count().unwrap_or(0);
         let recent = db.get_last_n_scans(10).unwrap_or_default();
         let plates_hr = calc_plates_hr(&db);
