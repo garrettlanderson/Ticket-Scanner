@@ -450,7 +450,42 @@ impl eframe::App for TicketScannerApp {
             });
 
         // ═══════════════════════════════════════════════════════════════════════
+        // Right-side panel — stat cards (TOTAL / PLATES PER HOUR)
+        // (Defined BEFORE the bottom numpad so it can claim the full height
+        // along the right edge.  Sized for a 1024-wide screen.)
+        // ═══════════════════════════════════════════════════════════════════════
+        egui::SidePanel::right("stats_panel")
+            .resizable(false)
+            .exact_width(248.0)
+            .frame(
+                Frame::default()
+                    .fill(BG)
+                    .inner_margin(Margin::same(10.0)),
+            )
+            .show(ctx, |ui| {
+                ui.vertical(|ui| {
+                    stat_card_compact(
+                        ui,
+                        "TOTAL SCANNED",
+                        &self.total.to_string(),
+                        "tickets",
+                        ACCENT,
+                    );
+                    ui.add_space(10.0);
+                    stat_card_compact(
+                        ui,
+                        "PLATES / HR",
+                        &format!("{:.0}", self.plates_hr),
+                        "last 10 min",
+                        SUCCESS,
+                    );
+                });
+            });
+
+        // ═══════════════════════════════════════════════════════════════════════
         // Bottom panel — input display + number pad
+        // (Defined AFTER the right-side stats panel, so the side panel claims
+        // the full height of the right edge and the numpad fills the rest.)
         // ═══════════════════════════════════════════════════════════════════════
         egui::TopBottomPanel::bottom("numpad")
             .exact_height(390.0)
@@ -590,130 +625,103 @@ impl eframe::App for TicketScannerApp {
             });
 
         // ═══════════════════════════════════════════════════════════════════════
-        // Central panel — stats (left) + recent scans (right)
+        // Central panel — recent scans (fills the strip between status and numpad)
         // ═══════════════════════════════════════════════════════════════════════
         egui::CentralPanel::default()
             .frame(Frame::default().fill(BG).inner_margin(Margin::same(10.0)))
             .show(ctx, |ui| {
-                // ── Stat cards: two squares side-by-side ─────────────────────
-                ui.horizontal(|ui| {
-                    let avail_w = ui.available_width();
-                    let card_size = ((avail_w - 12.0) / 2.0).min(220.0).max(160.0);
-
-                    stat_card(
-                        ui,
-                        "TOTAL SCANNED",
-                        &self.total.to_string(),
-                        "tickets",
-                        ACCENT,
-                        card_size,
-                    );
-                    ui.add_space(12.0);
-                    stat_card(
-                        ui,
-                        "PLATES / HR",
-                        &format!("{:.0}", self.plates_hr),
-                        "last 10 min",
-                        SUCCESS,
-                        card_size,
-                    );
-                });
-
-                ui.add_space(10.0);
-
-                // ── Recent scans list (fills the gap above the numpad) ──────
                 Frame::default()
                     .fill(PANEL)
                     .rounding(Rounding::same(12.0))
-                    .inner_margin(Margin::same(14.0))
+                    .inner_margin(Margin::same(10.0))
                     .show(ui, |ui| {
                         ui.set_min_width(ui.available_width() - 4.0);
                         ui.set_min_height(ui.available_height() - 4.0);
-                        ui.label(RichText::new("RECENTSCANs").size(14.0).color(MUTED));
-                        ui.add_space(4.0);
-                        ui.separator();
-                        ui.add_space(4.0);
 
-                        // Column headers
+                        // Header row
                         ui.horizontal(|ui| {
-                            ui.label(RichText::new("TICKET #").size(13.0).strong().color(MUTED));
+                            ui.label(
+                                RichText::new("RECENT SCANS").size(13.0).color(MUTED),
+                            );
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 ui.label(
                                     RichText::new("TIME SCANNED")
-                                        .size(13.0)
+                                        .size(12.0)
                                         .strong()
                                         .color(MUTED),
+                                );
+                                ui.add_space(40.0);
+                                ui.label(
+                                    RichText::new("TICKET #").size(12.0).strong().color(MUTED),
                                 );
                             });
                         });
                         ui.add_space(2.0);
                         ui.separator();
-                        ui.add_space(2.0);
 
                         if self.recent.is_empty() {
                             ui.centered_and_justified(|ui| {
                                 ui.label(
                                     RichText::new("No tickets scanned yet")
-                                        .size(16.0)
+                                        .size(14.0)
                                         .color(MUTED),
                                 );
                             });
                         } else {
-                            egui::ScrollArea::vertical().show(ui, |ui| {
-                                for (i, scan) in self.recent.iter().enumerate() {
-                                    let (color, prefix) = if i == 0 {
-                                        (WHITE, "▶ ")
-                                    } else {
-                                        (MUTED, "   ")
-                                    };
-                                    ui.horizontal(|ui| {
-                                        ui.label(
-                                            RichText::new(format!(
-                                                "{prefix}#{:>6}",
-                                                scan.ticket_number
-                                            ))
-                                            .size(20.0)
-                                            .strong()
-                                            .color(color),
-                                        );
-                                        ui.with_layout(
-                                            Layout::right_to_left(Align::Center),
-                                            |ui| {
-                                                ui.label(
-                                                    RichText::new(time_of(&scan.scanned_at))
-                                                        .size(16.0)
-                                                        .color(MUTED),
-                                                );
-                                            },
-                                        );
-                                    });
-                                    if i < self.recent.len() - 1 {
-                                        ui.separator();
+                            egui::ScrollArea::vertical()
+                                .auto_shrink([false; 2])
+                                .show(ui, |ui| {
+                                    for (i, scan) in self.recent.iter().enumerate() {
+                                        let (color, prefix) = if i == 0 {
+                                            (WHITE, "▶ ")
+                                        } else {
+                                            (MUTED, "   ")
+                                        };
+                                        ui.horizontal(|ui| {
+                                            ui.label(
+                                                RichText::new(format!(
+                                                    "{prefix}#{:>6}",
+                                                    scan.ticket_number
+                                                ))
+                                                .size(16.0)
+                                                .strong()
+                                                .color(color),
+                                            );
+                                            ui.with_layout(
+                                                Layout::right_to_left(Align::Center),
+                                                |ui| {
+                                                    ui.label(
+                                                        RichText::new(time_of(&scan.scanned_at))
+                                                            .size(14.0)
+                                                            .color(MUTED),
+                                                    );
+                                                },
+                                            );
+                                        });
                                     }
-                                }
-                            });
+                                });
                         }
                     });
             });
     }
 }
 
-// ── Shared widget: stat card ──────────────────────────────────────────────────
-fn stat_card(ui: &mut egui::Ui, label: &str, value: &str, sub: &str, color: Color32, size: f32) {
+// ── Shared widget: compact stat card (used in the right-side panel) ───────────
+fn stat_card_compact(ui: &mut egui::Ui, label: &str, value: &str, sub: &str, color: Color32) {
     Frame::default()
         .fill(PANEL)
         .rounding(Rounding::same(12.0))
-        .inner_margin(Margin::same(14.0))
+        .inner_margin(Margin::same(12.0))
         .show(ui, |ui| {
-            ui.set_min_size(Vec2::new(size, size));
-            ui.set_max_size(Vec2::new(size, size));
+            ui.set_min_width(ui.available_width());
             ui.vertical_centered(|ui| {
-                ui.add_space(size * 0.10);
-                ui.label(RichText::new(label).size(15.0).color(MUTED));
-                ui.add_space(size * 0.05);
-                ui.label(RichText::new(value).size(size * 0.42).strong().color(color));
-                ui.add_space(size * 0.02);
-                ui.label(RichText::new(sub).size(13.0).color(MUTED));
+                ui.add_space(4.0);
+                ui.label(RichText::new(label).size(13.0).color(MUTED));
+                ui.add_space(4.0);
+                ui.label(RichText::new(value).size(48.0).strong().color(color));
+                ui.add_space(2.0);
+                ui.label(RichText::new(sub).size(12.0).color(MUTED));
+                ui.add_space(2.0);
             });
         });
 }

@@ -15,7 +15,9 @@ fn main() -> eframe::Result<()> {
     // want winit's auto-detected value.
     if std::env::var_os("WINIT_X11_SCALE_FACTOR").is_none() {
         // SAFETY: single-threaded at this point, before any other code runs.
-        unsafe { std::env::set_var("WINIT_X11_SCALE_FACTOR", "1.0"); }
+        unsafe {
+            std::env::set_var("WINIT_X11_SCALE_FACTOR", "1.0");
+        }
     }
 
     // Allow overriding paths via environment variables
