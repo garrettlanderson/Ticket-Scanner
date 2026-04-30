@@ -1,0 +1,32 @@
+[2026-04-29 19:35:45] STARTUP    ticket scanner started
+[2026-04-29 19:35:45] INFO       database: tickets.db
+[2026-04-29 19:35:45] INFO       loaded: total=8, recent=8
+[2026-04-29 19:36:03] DUPLICATE  #402 rejected (raw="402")
+[2026-04-29 19:36:04] DUPLICATE  #402 rejected (raw="402")
+[2026-04-29 19:43:24] STARTUP    ticket scanner started
+[2026-04-29 19:43:24] INFO       database: tickets.db
+[2026-04-29 19:43:24] INFO       loaded: total=8, recent=8
+[2026-04-29 19:43:39] DUPLICATE  #402 rejected (raw="402")
+[2026-04-29 19:49:41] STARTUP    ticket scanner started
+[2026-04-29 19:49:41] INFO       database: tickets.db
+[2026-04-29 19:49:41] INFO       loaded: total=8, recent=8
+[2026-04-29 19:54:31] STARTUP    ticket scanner started
+[2026-04-29 19:54:31] INFO       database: tickets.db
+[2026-04-29 19:54:31] INFO       loaded: total=0, recent=0
+[2026-04-29 19:54:39] SCAN       #4 accepted (raw="4")
+[2026-04-29 19:54:51] SCAN       #402 accepted (raw="402")
+[2026-04-29 19:54:56] SCAN       #403 accepted (raw="403")
+[2026-04-29 19:55:01] SCAN       #404 accepted (raw="404")
+[2026-04-29 19:55:09] SCAN       #405 accepted (raw="405")
+[2026-04-29 19:55:12] SCAN       #401 accepted (raw="401")
+[2026-04-29 19:57:24] STARTUP    ticket scanner started
+[2026-04-29 19:57:24] INFO       database: tickets.db
+[2026-04-29 19:57:24] INFO       loaded: total=6, recent=6
+[2026-04-29 19:57:35] DUPLICATE  #403 rejected (raw="403")
+[2026-04-29 19:57:37] OVERRIDE   duplicate-allow window opened for 5 minutes
+[2026-04-29 19:57:47] SCAN       #403 accepted as DUPLICATE (override active, raw="403")
+[2026-04-29 19:57:52] SCAN       #403 accepted as DUPLICATE (override active, raw="403")
+[2026-04-29 20:04:47] OVERRIDE   duplicate-allow window expired
+[2026-04-29 20:18:47] STARTUP    ticket scanner started
+[2026-04-29 20:18:47] INFO       database: tickets.db
+[2026-04-29 20:18:47] INFO       loaded: total=8, recent=8
